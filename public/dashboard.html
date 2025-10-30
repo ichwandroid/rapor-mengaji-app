@@ -30,7 +30,26 @@
 
             <!-- Konten untuk Role ADMIN -->
             <div id="admin-content" class="hidden">
-                <div class="bg-white shadow rounded-lg p-6">
+
+                <div class="bg-white shadow rounded-lg p-6 mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard Admin</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button data-action="showUserManagement"
+                            class="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-4 px-4 rounded">
+                            Manajemen Pengguna
+                        </button>
+                        <button data-action="showProgramManagement"
+                            class="bg-green-600 hover:bg-green-800 text-white font-bold py-4 px-4 rounded">
+                            Manajemen Program & Kurikulum
+                        </button>
+                        <button class="bg-gray-400 hover:bg-gray-600 text-white font-bold py-4 px-4 rounded" disabled>
+                            Laporan (Coming Soon)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Konten Manajemen Pengguna -->
+                <div id="user-management-section" class="bg-white shadow rounded-lg p-6 hidden">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-semibold text-gray-700">Manajemen Pengguna</h2>
                         <button id="add-user-btn"
@@ -67,6 +86,15 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Konten Manajemen Program (akan kita buat) -->
+                <div id="program-management-section" class="hidden">
+                    <button data-action="openAddAssignmentModal"
+                        class="bg-green-600 hover:bg-green-800 text-white font-bold py-4 px-4 rounded">
+                        Manajemen Program & Kurikulum
+                    </button>
+                    <p class="text-gray-600">Konten untuk Manajemen Program akan muncul di sini.</p>
                 </div>
             </div>
 
@@ -213,6 +241,200 @@
                         <button type="submit"
                             class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                             Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Pengguna -->
+    <div id="edit-user-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Edit Pengguna</h3>
+                <form id="edit-user-form">
+                    <!-- ID User (disembunyikan) -->
+                    <input type="hidden" id="edit-user-id">
+
+                    <!-- Nama -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-name">Nama Lengkap</label>
+                        <input type="text" id="edit-name" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
+
+                    <!-- Email (Read-only) -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-email">Email (Tidak bisa
+                            diubah)</label>
+                        <input type="email" id="edit-email" readonly
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight bg-gray-100">
+                    </div>
+
+                    <!-- Role -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-role">Role</label>
+                        <select id="edit-role"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="guru_gpq">Guru GPQ</option>
+                            <option value="guru_gpai">Guru GPAI</option>
+                        </select>
+                    </div>
+
+                    <!-- Field Khusus Guru GPAI -->
+                    <div id="edit-gpai-fields" class="hidden mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kelas Diampu (pisahkan dengan
+                            koma)</label>
+                        <input type="text" id="edit-kelas" placeholder="contoh: Kelas-1A, Kelas-2B"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
+
+                    <!-- Field Khusus Guru GPQ -->
+                    <div id="edit-gpq-fields" class="hidden mb-4 border p-4 rounded">
+                        <h4 class="font-bold mb-3">Penugasan Kelompok per Shift</h4>
+                        <!-- Shift 1 -->
+                        <div class="mb-3">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelompok di Shift 1</label>
+                            <select id="edit-kelompok-shift-1"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">-- Pilih Kelompok --</option>
+                                <option value="1">Kelompok 1</option>
+                                <option value="2">Kelompok 2</option>
+                                <option value="3">Kelompok 3</option>
+                                <option value="4">Kelompok 4</option>
+                                <option value="5">Kelompok 5</option>
+                                <option value="6">Kelompok 6</option>
+                                <option value="7">Kelompok 7</option>
+                                <option value="8">Kelompok 8</option>
+                                <option value="9">Kelompok 9</option>
+                                <option value="10">Kelompok 10</option>
+                                <option value="11">Kelompok 11</option>
+                                <option value="12">Kelompok 12</option>
+                            </select>
+                        </div>
+                        <!-- Shift 2 -->
+                        <div class="mb-3">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelompok di Shift 2</label>
+                            <select id="edit-kelompok-shift-2"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">-- Pilih Kelompok --</option>
+                                <option value="1">Kelompok 1</option>
+                                <option value="2">Kelompok 2</option>
+                                <option value="3">Kelompok 3</option>
+                                <option value="4">Kelompok 4</option>
+                                <option value="5">Kelompok 5</option>
+                                <option value="6">Kelompok 6</option>
+                                <option value="7">Kelompok 7</option>
+                                <option value="8">Kelompok 8</option>
+                                <option value="9">Kelompok 9</option>
+                                <option value="10">Kelompok 10</option>
+                                <option value="11">Kelompok 11</option>
+                                <option value="12">Kelompok 12</option>
+                            </select>
+                        </div>
+                        <!-- Shift 3 -->
+                        <div class="mb-3">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelompok di Shift 3</label>
+                            <select id="edit-kelompok-shift-3"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">-- Pilih Kelompok --</option>
+                                <option value="1">Kelompok 1</option>
+                                <option value="2">Kelompok 2</option>
+                                <option value="3">Kelompok 3</option>
+                                <option value="4">Kelompok 4</option>
+                                <option value="5">Kelompok 5</option>
+                                <option value="6">Kelompok 6</option>
+                                <option value="7">Kelompok 7</option>
+                                <option value="8">Kelompok 8</option>
+                                <option value="9">Kelompok 9</option>
+                                <option value="10">Kelompok 10</option>
+                                <option value="11">Kelompok 11</option>
+                                <option value="12">Kelompok 12</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tombol -->
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="cancel-edit-user"
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Batal
+                        </button>
+                        <button type="submit"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Simpan Perubahan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah Program Assignment -->
+    <div id="add-assignment-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-10 mx-auto p-5 border w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Tetapkan Program & Kurikulum</h3>
+
+                <form id="add-assignment-form">
+                    <!-- Pilih Program -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="assignment-program">Pilih
+                            Program</label>
+                        <select id="assignment-program" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Program --</option>
+                            <option value="Tahfizh Al-Qur’An">Tahfizh Al-Qur’An</option>
+                            <option value="Tahfizh Do'A Sehari-Hari">Tahfizh Do'A Sehari-Hari</option>
+                            <option value="Tathbiq Ibadah">Tathbiq Ibadah</option>
+                            <!-- Opsi akan diisi dari Firestore -->
+                        </select>
+                    </div>
+
+                    <!-- Pilih Semester -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="assignment-semester">Pilih
+                            Semester</label>
+                        <select id="assignment-semester" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Semester --</option>
+                            <option value="Ganjil">Ganjil</option>
+                            <option value="Genap">Genap</option>
+                        </select>
+                    </div>
+
+                    <!-- Pilih Grade -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="assignment-grade">Pilih
+                            Grade</label>
+                        <select id="assignment-grade" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Grade --</option>
+                            <option value="1">Grade 1</option>
+                            <option value="2">Grade 2</option>
+                            <option value="3">Grade 3</option>
+                            <option value="4">Grade 4</option>
+                            <option value="5">Grade 5</option>
+                            <option value="6">Grade 6</option>
+                        </select>
+                    </div>
+
+                    <!-- Input Materi (Akan berubah secara dinamis) -->
+                    <div id="assignment-materi-container" class="mb-4 border p-4 rounded">
+                        <h4 class="font-bold mb-3">Materi</h4>
+                        <p class="text-gray-500">Pilih program terlebih dahulu.</p>
+                    </div>
+
+                    <!-- Tombol -->
+                    <div class="flex justify-end space-x-2 mt-6">
+                        <button type="button" id="cancel-add-assignment"
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Batal
+                        </button>
+                        <button type="submit"
+                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            Simpan Kurikulum
                         </button>
                     </div>
                 </form>

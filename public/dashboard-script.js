@@ -74,13 +74,14 @@ const getUserData = async (user) => {
                 }
 
                 row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${userData.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${userData.email}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${roleBadge}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button class="text-indigo-600 hover:text-indigo-900">Detail</button>
-                        </td>
-                    `;
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${userData.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${userData.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${roleBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <!-- TOMBOL EDIT YANG BARU -->
+                        <button class="edit-btn text-indigo-600 hover:text-indigo-900" data-user-id="${doc.id}" data-user-data='${JSON.stringify(userData).replace(/'/g, "&apos;")}'>Edit</button>
+                    </td>
+                `;
                 userTableBody.appendChild(row);
               });
             }
@@ -219,5 +220,237 @@ addUserForm.addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error adding user:', error);
         alert('Gagal menambahkan pengguna: ' + error.message);
+    }
+});
+
+// --- EVENT DELEGATION UNTUK TOMBOL EDIT ---
+// Ini akan menangkap klik pada tombol edit di mana saja di dalam tabel
+document.getElementById('user-table-body').addEventListener('click', (e) => {
+    // Periksa apakah yang diklik adalah tombol dengan class 'edit-btn'
+    if (e.target.classList.contains('edit-btn')) {
+        
+        // Ambil data dari atribut data-*
+        const userId = e.target.dataset.userId;
+        const userData = JSON.parse(e.target.dataset.userData);
+
+        // Panggil fungsi untuk membuka modal
+        openEditModal(userId, userData);
+    }
+});
+
+// --- LOGIKA MODAL EDIT PENGGUNA ---
+
+const editUserModal = document.getElementById('edit-user-modal');
+const cancelEditUserBtn = document.getElementById('cancel-edit-user');
+const editUserForm = document.getElementById('edit-user-form');
+const editRoleSelect = document.getElementById('edit-role');
+const editGpaiFields = document.getElementById('edit-gpai-fields');
+const editGpqFields = document.getElementById('edit-gpq-fields');
+
+// Fungsi untuk membuka modal dan mengisi data
+function openEditModal(userId, userData) {
+    console.log('Mengedit user:', userId, userData);
+
+    // Isi form dengan data yang ada
+    document.getElementById('edit-user-id').value = userId;
+    document.getElementById('edit-name').value = userData.name;
+    document.getElementById('edit-email').value = userData.email;
+    editRoleSelect.value = userData.role;
+
+    // Tampilkan/sembunyikan field dan isi datanya
+    if (userData.role === 'guru_gpai') {
+        editGpaiFields.classList.remove('hidden');
+        editGpqFields.classList.add('hidden');
+        document.getElementById('edit-kelas').value = userData.kelasDiampu ? userData.kelasDiampu.join(', ') : '';
+    } else if (userData.role === 'guru_gpq') {
+        editGpqFields.classList.remove('hidden');
+        editGpaiFields.classList.add('hidden');
+        if (userData.assignments) {
+            document.getElementById('edit-kelompok-shift-1').value = userData.assignments.find(a => a.shift === 1)?.kelompok || '';
+            document.getElementById('edit-kelompok-shift-2').value = userData.assignments.find(a => a.shift === 2)?.kelompok || '';
+            document.getElementById('edit-kelompok-shift-3').value = userData.assignments.find(a => a.shift === 3)?.kelompok || '';
+        }
+    }
+
+    editUserModal.classList.remove('hidden');
+}
+
+// Tutup modal
+cancelEditUserBtn.addEventListener('click', () => {
+    editUserModal.classList.add('hidden');
+});
+
+// Tampilkan/sembunyikan field saat role diubah di modal edit
+editRoleSelect.addEventListener('change', (e) => {
+    if (e.target.value === 'guru_gpai') {
+        editGpaiFields.classList.remove('hidden');
+        editGpqFields.classList.add('hidden');
+    } else if (e.target.value === 'guru_gpq') {
+        editGpqFields.classList.remove('hidden');
+        editGpaiFields.classList.add('hidden');
+    }
+});
+
+// Proses pembaruan user
+editUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const userId = document.getElementById('edit-user-id').value;
+    const name = document.getElementById('edit-name').value;
+    const role = editRoleSelect.value;
+    
+    const updatedData = { name: name, role: role };
+
+    if (role === 'guru_gpai') {
+        const kelasDiampu = document.getElementById('edit-kelas').value.split(',').map(k => k.trim()).filter(k => k);
+        updatedData.kelasDiampu = kelasDiampu;
+        updatedData.assignments = firebase.firestore.FieldValue.delete(); // Hapus field lama
+    } else if (role === 'guru_gpq') {
+        const assignments = [
+            { shift: 1, kelompok: parseInt(document.getElementById('edit-kelompok-shift-1').value) },
+            { shift: 2, kelompok: parseInt(document.getElementById('edit-kelompok-shift-2').value) },
+            { shift: 3, kelompok: parseInt(document.getElementById('edit-kelompok-shift-3').value) }
+        ];
+        updatedData.assignments = assignments;
+        updatedData.kelasDiampu = firebase.firestore.FieldValue.delete(); // Hapus field lama
+    }
+
+    try {
+        await db.collection('users').doc(userId).update(updatedData);
+        console.log('User successfully updated!');
+        alert('Data pengguna berhasil diperbarui!');
+        editUserModal.classList.add('hidden');
+        window.location.reload(); // Refresh untuk menampilkan perubahan
+    } catch (error) {
+        console.error('Error updating user: ', error);
+        alert('Gagal memperbarui data: ' + error.message);
+    }
+});
+
+// --- LOGIKA MODAL TAMBAH PROGRAM ASSIGNMENT (VERSI MANUAL) ---
+
+const addAssignmentModal = document.getElementById('add-assignment-modal');
+const cancelAddAssignmentBtn = document.getElementById('cancel-add-assignment');
+const addAssignmentForm = document.getElementById('add-assignment-form');
+const assignmentProgramSelect = document.getElementById('assignment-program');
+const assignmentMateriContainer = document.getElementById('assignment-materi-container');
+
+// Fungsi untuk membuka modal (lebih sederhana)
+const openAddAssignmentModal = () => {
+    console.log('Membuka modal tambah assignment');
+    addAssignmentModal.classList.remove('hidden');
+};
+
+// Tutup modal
+cancelAddAssignmentBtn.addEventListener('click', () => {
+    addAssignmentModal.classList.add('hidden');
+    addAssignmentForm.reset();
+    assignmentMateriContainer.innerHTML = '<p class="text-gray-500">Pilih program terlebih dahulu.</p>';
+});
+
+// Event listener untuk perubahan dropdown program
+assignmentProgramSelect.addEventListener('change', (e) => {
+    const selectedProgramId = e.target.value;
+    let materiHTML = '';
+
+    // PERHATIKAN: Nilainya harus sama persis dengan 'value' di HTML
+    if (selectedProgramId === 'Tahfizh Al-Qur’An') {
+        // Form untuk TAHFIZH AL-QUR'AN
+        materiHTML = `
+            <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="materi-surah">Nama Surah</label>
+                <input type="text" id="materi-surah" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight" placeholder="contoh: Al-Fatihah">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="materi-ayat">Jumlah Ayat</label>
+                <input type="number" id="materi-ayat" required min="1" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight" placeholder="contoh: 7">
+            </div>
+        `;
+    } else if (selectedProgramId) {
+        // Form untuk program lainnya (DO'A, TATHBIQ IBADAH)
+        materiHTML = `
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="materi-deskripsi">Deskripsi Materi</label>
+                <textarea id="materi-deskripsi" required rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight" placeholder="Jelaskan materi yang akan diajarkan..."></textarea>
+            </div>
+        `;
+    } else {
+        // Tampilkan placeholder jika tidak ada program yang dipilih
+        materiHTML = '<p class="text-gray-500">Pilih program terlebih dahulu.</p>';
+    }
+    
+    assignmentMateriContainer.innerHTML = materiHTML;
+});
+
+// Proses submit form
+addAssignmentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const programId = assignmentProgramSelect.value;
+    const semester = document.getElementById('assignment-semester').value;
+    const grade = parseInt(document.getElementById('assignment-grade').value);
+    
+    let materi = {};
+
+    // Ambil data materi berdasarkan program yang dipilih
+    if (programId === 'Tahfizh Al-Qur’An') {
+        materi.namaSurah = document.getElementById('materi-surah').value;
+        materi.jumlahAyat = parseInt(document.getElementById('materi-ayat').value);
+    } else {
+        materi.deskripsi = document.getElementById('materi-deskripsi').value;
+    }
+
+    const assignmentData = {
+        programId: programId,
+        semester: semester,
+        grade: grade,
+        materi: materi,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+        await db.collection('programAssignments').add(assignmentData);
+        console.log('Program assignment successfully created!');
+        alert('Kurikulum berhasil ditetapkan!');
+        addAssignmentModal.classList.add('hidden');
+        addAssignmentForm.reset();
+        assignmentMateriContainer.innerHTML = '<p class="text-gray-500">Pilih program terlebih dahulu.</p>';
+    } catch (error) {
+        console.error('Error creating assignment:', error);
+        alert('Gagal menetapkan kurikulum: ' + error.message);
+    }
+});
+
+// --- EVENT DELEGATION UNTUK MENU ADMIN ---
+
+const adminContent = document.getElementById('admin-content');
+
+adminContent.addEventListener('click', (e) => {
+    const action = e.target.dataset.action;
+
+    if (action) {
+        // Fungsi untuk menampilkan/menyembunyikan menu
+        const showUserManagement = () => {
+            document.getElementById('user-management-section').classList.remove('hidden');
+            document.getElementById('program-management-section').classList.add('hidden');
+        };
+
+        const showProgramManagement = () => {
+            document.getElementById('program-management-section').classList.remove('hidden');
+            document.getElementById('user-management-section').classList.add('hidden');
+        }
+
+        // Panggil fungsi yang sesuai berdasarkan aksi
+        switch (action) {
+            case 'showUserManagement':
+                showUserManagement();
+                break;
+            case 'openAddAssignmentModal':
+                openAddAssignmentModal();
+                break;
+            case 'showProgramManagement':
+                showProgramManagement();
+                break;
+        }
     }
 });
