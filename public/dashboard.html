@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <!-- Header -->
     <header class="bg-white shadow">
@@ -25,21 +27,206 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="px-4 py-6 sm:px-0">
-            <div class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
-                <div class="text-center">
-                    <h2 class="text-2xl font-semibold text-gray-700">Selamat Datang!</h2>
-                    <p class="mt-2 text-gray-500">Konten dashboard akan muncul di sini berdasarkan peran (role) Anda.</p>
+
+            <!-- Konten untuk Role ADMIN -->
+            <div id="admin-content" class="hidden">
+                <div class="bg-white shadow rounded-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-semibold text-gray-700">Manajemen Pengguna</h2>
+                        <button id="add-user-btn"
+                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            + Tambah Pengguna Baru
+                        </button>
+                    </div>
+
+                    <!-- Tabel Pengguna -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Nama</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Email</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Role</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Baris data pengguna akan dimuat di sini oleh JavaScript -->
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">Memuat data pengguna...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
+            <!-- Konten untuk Role GURU GPQ -->
+            <div id="guru-gpq-content" class="hidden">
+                <div class="border-4 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                    <h2 class="text-2xl font-semibold text-gray-700">Dashboard Guru GPQ</h2>
+                    <p class="mt-4">Di sini Anda bisa menginput nilai untuk siswa di bawah bimbingan Anda.</p>
+                    <!-- Nanti akan ada daftar siswa di sini -->
+                </div>
+            </div>
+
+            <!-- Konten untuk Role GURU GPAI -->
+            <div id="guru-gpai-content" class="hidden">
+                <div class="border-4 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                    <h2 class="text-2xl font-semibold text-gray-700">Dashboard Guru GPAI</h2>
+                    <p class="mt-4">Di sini Anda bisa menginput nilai untuk siswa di kelas yang Anda ampu.</p>
+                    <!-- Nanti akan ada daftar kelas dan siswa di sini -->
+                </div>
+            </div>
+
         </div>
     </main>
+
+    <!-- MODAL -->
+    <!-- Modal Tambah Pengguna -->
+    <div id="add-user-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Tambah Pengguna Baru</h3>
+                <form id="add-user-form">
+                    <!-- Nama -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="new-name">Nama Lengkap</label>
+                        <input type="text" id="new-name" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="new-email">Email</label>
+                        <input type="email" id="new-email" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
+                    <!-- Password -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="new-password">Password
+                            Sementara</label>
+                        <input type="password" id="new-password" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
+                    <!-- Role -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="new-role">Role</label>
+                        <select id="new-role" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Role --</option>
+                            <option value="guru_gpq">Guru GPQ</option>
+                            <option value="guru_gpai">Guru GPAI</option>
+                        </select>
+                    </div>
+
+                    <!-- Field Khusus Guru GPQ -->
+                    <div id="gpq-fields" class="hidden mb-4 border p-4 rounded">
+                        <h4 class="font-bold mb-3">Penugasan Kelompok per Shift</h4>
+
+                        <!-- Shift 1 -->
+                        <div class="mb-3">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelompok di Shift 1</label>
+                            <select id="kelompok-shift-1"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">-- Pilih Kelompok --</option>
+                                <option value="1">Kelompok 1</option>
+                                <option value="2">Kelompok 2</option>
+                                <option value="3">Kelompok 3</option>
+                                <option value="4">Kelompok 4</option>
+                                <option value="5">Kelompok 5</option>
+                                <option value="6">Kelompok 6</option>
+                                <option value="7">Kelompok 7</option>
+                                <option value="8">Kelompok 8</option>
+                                <option value="9">Kelompok 9</option>
+                                <option value="10">Kelompok 10</option>
+                                <option value="11">Kelompok 11</option>
+                                <option value="12">Kelompok 12</option>
+                            </select>
+                        </div>
+
+                        <!-- Shift 2 -->
+                        <div class="mb-3">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelompok di Shift 2</label>
+                            <select id="kelompok-shift-2"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">-- Pilih Kelompok --</option>
+                                <option value="1">Kelompok 1</option>
+                                <option value="2">Kelompok 2</option>
+                                <option value="3">Kelompok 3</option>
+                                <option value="4">Kelompok 4</option>
+                                <option value="5">Kelompok 5</option>
+                                <option value="6">Kelompok 6</option>
+                                <option value="7">Kelompok 7</option>
+                                <option value="8">Kelompok 8</option>
+                                <option value="9">Kelompok 9</option>
+                                <option value="10">Kelompok 10</option>
+                                <option value="11">Kelompok 11</option>
+                                <option value="12">Kelompok 12</option>
+                            </select>
+                        </div>
+
+                        <!-- Shift 3 -->
+                        <div class="mb-3">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelompok di Shift 3</label>
+                            <select id="kelompok-shift-3"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">-- Pilih Kelompok --</option>
+                                <option value="1">Kelompok 1</option>
+                                <option value="2">Kelompok 2</option>
+                                <option value="3">Kelompok 3</option>
+                                <option value="4">Kelompok 4</option>
+                                <option value="5">Kelompok 5</option>
+                                <option value="6">Kelompok 6</option>
+                                <option value="7">Kelompok 7</option>
+                                <option value="8">Kelompok 8</option>
+                                <option value="9">Kelompok 9</option>
+                                <option value="10">Kelompok 10</option>
+                                <option value="11">Kelompok 11</option>
+                                <option value="12">Kelompok 12</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Field Khusus Guru GPAI -->
+                    <div id="gpai-fields" class="hidden mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kelas Diampu (pisahkan dengan
+                            koma)</label>
+                        <input type="text" id="new-kelas" placeholder="contoh: Kelas-1A, Kelas-2B"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
+
+                    <!-- Tombol -->
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="cancel-add-user"
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Batal
+                        </button>
+                        <button type="submit"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    
+
     <!-- Kode JavaScript untuk Dashboard -->
     <script src="dashboard-script.js"></script>
 </body>
+
 </html>
