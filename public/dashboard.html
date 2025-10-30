@@ -88,13 +88,80 @@
                     </div>
                 </div>
 
-                <!-- Konten Manajemen Program (akan kita buat) -->
+                <!-- Konten Manajemen Program -->
                 <div id="program-management-section" class="hidden">
-                    <button data-action="openAddAssignmentModal"
-                        class="bg-green-600 hover:bg-green-800 text-white font-bold py-4 px-4 rounded">
-                        Manajemen Program & Kurikulum
-                    </button>
-                    <p class="text-gray-600">Konten untuk Manajemen Program akan muncul di sini.</p>
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-700">Manajemen Program & Kurikulum</h2>
+                            <button data-action="openAddAssignmentModal"
+                                class="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded">
+                                + Tambah Kurikulum Baru
+                            </button>
+                        </div>
+
+                        <!-- Filter -->
+                        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Filter Program</label>
+                                    <select id="filter-program"
+                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                        <option value="">Semua Program</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Filter Semester</label>
+                                    <select id="filter-semester"
+                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                        <option value="">Semua Semester</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Filter Grade</label>
+                                    <select id="filter-grade"
+                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                        <option value="">Semua Grade</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <button id="reset-filters"
+                                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded w-full">
+                                        Reset Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabel Data -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Program</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Semester</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Grade</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Materi</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assignment-table-body" class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
