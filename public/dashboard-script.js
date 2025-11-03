@@ -24,6 +24,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const adminContent = document.getElementById("admin-content");
   const userTableBody = document.getElementById("user-table-body");
   const assignmentTableBody = document.getElementById("assignment-table-body");
+  const studentManagementSection = document.getElementById(
+    "student-management-section"
+  );
+  const stuendtTableBody = document.getElementById("student-table-body");
 
   // --- ELEMEN MODAL ---
   const addUserModal = document.getElementById("add-user-modal");
@@ -50,6 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
     "assignment-materi-container"
   );
 
+  const addStudentModal = document.getElementById("add-student-modal");
+  const cancelAddStudentBtn = document.getElementById("cancel-add-student");
+  const addStudentForm = document.getElementById("add-student-form");
+  const studentGradeSelect = document.getElementById("student-grade");
+  const studentClassSelect = document.getElementById("student-class");
+  const studentGroupSelect = document.getElementById("student-group");
+  const studentTableBody = document.getElementById("student-table-body");
+
   // --- ELEMEN FILTER ---
   const filterProgram = document.getElementById("filter-program");
   const filterSemester = document.getElementById("filter-semester");
@@ -57,6 +69,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetFiltersBtn = document.getElementById("reset-filters");
 
   let allAssignments = []; // Variabel global untuk menyimpan semua data assignment
+  let allKelas = []; // Variabel global untuk menyimpan semua kelas
+
+  // --- FUNGSI-FUNGSI PEMBANTU ---
+  const populateDropdown = (element, values, prefix = "") => {
+    element.innerHTML = '<option value="">-- Pilih --</option>';
+    values.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = prefix ? `${prefix} ${value}` : value;
+      element.appendChild(option);
+    });
+  };
 
   // --- FUNGSI-FUNGSI UTAMA ---
 
@@ -166,6 +190,133 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  // Fungsi untuk mengambil semua data kelas
+  const fetchAllKelas = async () => {
+    try {
+      const snapshot = await db.collection("kelas").get();
+      allKelas = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error("Error fetching kelas:", error);
+    }
+  };
+
+  // Fungsi untuk membuka modal tambah siswa
+  const openAddStudentModal = async () => {
+    addStudentModal.classList.remove("hidden");
+    populateDropdown(
+      studentGroupSelect,
+      Array.from({ length: 12 }, (_, i) => i + 1),
+      "Kelompok"
+    );
+    if (allKelas.length === 0) {
+      await fetchAllKelas();
+    }
+  };
+
+  // Event Listener untuk perubahan Grade
+  studentGradeSelect.addEventListener("change", (e) => {
+    const selectedGrade = e.target.value;
+    const filteredKelas = allKelas.filter(
+      (k) => k.tingkat.toString() === selectedGrade
+    );
+    studentClassSelect.disabled = false;
+    populateDropdown(
+      studentClassSelect,
+      filteredKelas.map((k) => k.id)
+    );
+  });
+
+  // Event Listener untuk submit form
+  addStudentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const studentData = {
+      nis: document.getElementById("student-nis").value,
+      nama: document.getElementById("student-name").value,
+      grade: parseInt(studentGradeSelect.value),
+      kelasId: studentClassSelect.value,
+      shift: parseInt(document.getElementById("student-shift").value),
+      kelompok: parseInt(document.getElementById("student-group").value),
+    };
+    try {
+      await db.collection("students").doc(studentData.nis).set(studentData);
+      alert("Data siswa berhasil ditambahkan!");
+      addStudentModal.classList.add("hidden");
+      addStudentForm.reset();
+      studentClassSelect.disabled = true;
+      await loadAndDisplayStudents();
+    } catch (error) {
+      console.error("Error creating student:", error);
+      alert("Gagal menambahkan siswa: " + error.message);
+    }
+  });
+
+  // Tutup modal
+  cancelAddStudentBtn.addEventListener("click", () => {
+    addStudentModal.classList.add("hidden");
+    addStudentForm.reset();
+    studentClassSelect.disabled = true;
+  });
+
+  // Fungsi untuk memuat dan menampilkan data siswa (DIDEKLARASIKAN DI SINI)
+  const loadAndDisplayStudents = async () => {
+    // Sekarang fungsi ini bisa mengakses studentTableBody karena sudah dideklarasikan di atas
+    studentTableBody.innerHTML =
+      '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Memuat data siswa...</td></tr>';
+    try {
+      const [studentsSnapshot, kelasSnapshot] = await Promise.all([
+        db.collection("students").get(),
+        db.collection("kelas").get(),
+      ]);
+      const students = studentsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const kelasMap = {};
+      kelasSnapshot.docs.forEach((doc) => {
+        kelasMap[doc.id] = doc.data().nama;
+      });
+
+      studentTableBody.innerHTML = "";
+      if (students.length === 0) {
+        studentTableBody.innerHTML =
+          '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada data siswa.</td></tr>';
+        return;
+      }
+      students.forEach((student) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+                  student.nis
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
+                  student.nama
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                  student.grade
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                  kelasMap[student.kelasId] || student.kelasId
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                  student.shift
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                  student.kelompok
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-indigo-600 hover:text-indigo-900">Edit</button>
+                    <button class="text-red-600 hover:text-red-900">Hapus</button>
+                </td>
+            `;
+        studentTableBody.appendChild(row);
+      });
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      studentTableBody.innerHTML =
+        '<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">Gagal memuat data.</td></tr>';
+    }
+  };
+
   const populateFilters = () => {
     const programs = [...new Set(allAssignments.map((a) => a.programId))];
     const semesters = [...new Set(allAssignments.map((a) => a.semester))];
@@ -175,17 +326,17 @@ document.addEventListener("DOMContentLoaded", () => {
     populateDropdown(filterGrade, grades);
   };
 
-  const populateDropdown = (element, values) => {
-    const currentValue = element.value;
-    element.innerHTML = '<option value="">Semua</option>';
-    values.sort().forEach((value) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      element.appendChild(option);
-    });
-    element.value = currentValue;
-  };
+  // const populateDropdown = (element, values) => {
+  //   const currentValue = element.value;
+  //   element.innerHTML = '<option value="">Semua</option>';
+  //   values.sort().forEach((value) => {
+  //     const option = document.createElement("option");
+  //     option.value = value;
+  //     option.textContent = value;
+  //     element.appendChild(option);
+  //   });
+  //   element.value = currentValue;
+  // };
 
   const renderAssignmentTable = (data) => {
     assignmentTableBody.innerHTML = "";
@@ -227,16 +378,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAssignmentTable(filteredData);
   };
 
-  // --- EKSEKUSI UTAMA ---
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      await getUserData(user);
-    } else {
-      console.log("User not logged in, redirecting...");
-      window.location.href = "index.html";
-    }
-  });
-
   // --- EVENT LISTENERS ---
 
   // Event Delegation untuk Menu Admin
@@ -250,6 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document
           .getElementById("program-management-section")
           .classList.add("hidden");
+        document
+          .getElementById("student-management-section")
+          .classList.add("hidden");
+        loadAndDisplayUsers();
       };
       const openAddAssignmentModal = () => {
         addAssignmentModal.classList.remove("hidden");
@@ -261,7 +406,22 @@ document.addEventListener("DOMContentLoaded", () => {
         document
           .getElementById("program-management-section")
           .classList.remove("hidden");
+        document
+          .getElementById("student-management-section")
+          .classList.add("hidden");
         loadAndDisplayAssignments();
+      };
+      const showStudentManagement = () => {
+        document
+          .getElementById("student-management-section")
+          .classList.remove("hidden");
+        document
+          .getElementById("user-management-section")
+          .classList.add("hidden");
+        document
+          .getElementById("program-management-section")
+          .classList.add("hidden");
+        loadAndDisplayStudents();
       };
       switch (action) {
         case "showUserManagement":
@@ -272,6 +432,9 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
         case "showProgramManagement":
           showProgramManagement();
+          break;
+        case "showStudentManagement":
+          showStudentManagement();
           break;
       }
     }
@@ -547,7 +710,7 @@ document.addEventListener("DOMContentLoaded", () => {
       addAssignmentModal.classList.add("hidden");
       addAssignmentForm.reset();
       // assignmentMateriContainer.innerHTML =
-        // '<p class="text-gray-500">Pilih program terlebih dahulu.</p>';
+      // '<p class="text-gray-500">Pilih program terlebih dahulu.</p>';
     } catch (error) {
       console.error("Error creating assignment:", error);
       alert("Gagal menetapkan kurikulum: " + error.message);
@@ -563,6 +726,16 @@ document.addEventListener("DOMContentLoaded", () => {
     filterSemester.value = "";
     filterGrade.value = "";
     renderAssignmentTable(allAssignments);
+  });
+
+  // --- EKSEKUSI UTAMA ---
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      await getUserData(user);
+    } else {
+      console.log("User not logged in, redirecting...");
+      window.location.href = "index.html";
+    }
   });
 
   // Fungsi Logout
