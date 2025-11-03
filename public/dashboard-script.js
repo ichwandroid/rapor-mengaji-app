@@ -215,11 +215,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Event Listener untuk perubahan Grade
   studentGradeSelect.addEventListener("change", (e) => {
+    console.log("Grade dropdown changed!"); // 1. Apakah event ini jalan?
     const selectedGrade = e.target.value;
+    console.log("Selected Grade:", selectedGrade); // 2. Apa nilai Grade yang dipilih?
+    console.log("All kelas data before filtering:", allKelas); // 3. Apa isi variabel allKelas?
+
     const filteredKelas = allKelas.filter(
       (k) => k.tingkat.toString() === selectedGrade
     );
+    console.log("Filtered kelas data:", filteredKelas); // 4. Apa hasil filternya?
+
+    // Aktifkan dropdown kelas
     studentClassSelect.disabled = false;
+
+    // Isi dropdown kelas
     populateDropdown(
       studentClassSelect,
       filteredKelas.map((k) => k.id)
@@ -423,6 +432,19 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
         case "showStudentManagement":
           showStudentManagement();
+          break;
+        case "showStudentManagement":
+          document
+            .getElementById("student-management-section")
+            .classList.add("hidden");
+          document
+            .getElementById("user-management-section")
+            .classList.add("hidden");
+          studentManagementSection.classList.remove("hidden");
+          loadAndDisplayStudents();
+          break;
+        case "openAddStudentModal":
+          openAddStudentModal();
           break;
       }
     }
