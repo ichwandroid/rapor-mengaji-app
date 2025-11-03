@@ -326,18 +326,6 @@ document.addEventListener("DOMContentLoaded", () => {
     populateDropdown(filterGrade, grades);
   };
 
-  // const populateDropdown = (element, values) => {
-  //   const currentValue = element.value;
-  //   element.innerHTML = '<option value="">Semua</option>';
-  //   values.sort().forEach((value) => {
-  //     const option = document.createElement("option");
-  //     option.value = value;
-  //     option.textContent = value;
-  //     element.appendChild(option);
-  //   });
-  //   element.value = currentValue;
-  // };
-
   const renderAssignmentTable = (data) => {
     assignmentTableBody.innerHTML = "";
     if (data.length === 0) {
