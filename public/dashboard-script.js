@@ -143,7 +143,9 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           let jobdescription = "";
           if (userData.role === "guru_gpai" && userData.kelasDiampu) {
-            jobdescription = `Mengampu kelas: ${userData.kelasDiampu.join(", ")}`;
+            jobdescription = `Mengampu kelas: ${userData.kelasDiampu.join(
+              ", "
+            )}`;
           } else if (userData.role === "guru_gpq" && userData.assignments) {
             const assignmentsDesc = userData.assignments
               .map((a) => `Shift ${a.shift}: Kelompok ${a.kelompok}`)
@@ -1015,5 +1017,82 @@ document.addEventListener("DOMContentLoaded", () => {
       students.push(student);
     }
     return students;
+  };
+
+  // --- LOGIKA UPLOAD CSV UNTUK KURIKULUM ---
+
+  const assignmentCsvUpload = document.getElementById("assignment-csv-upload");
+
+  assignmentCsvUpload.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvData = event.target.result;
+      const assignments = parseAssignmentCSV(csvData);
+
+      if (assignments.length === 0) {
+        alert("File CSV kosong atau tidak valid.");
+        return;
+      }
+
+      const isConfirmed = confirm(
+        `Anda akan menambah ${assignments.length} kurikulum. Lanjutkan?`
+      );
+      if (!isConfirmed) return;
+
+      try {
+        const batch = db.batch();
+        assignments.forEach((assignment) => {
+          const docRef = db.collection("programAssignments").doc(); // Gunakan Auto-ID
+          batch.set(docRef, assignment);
+        });
+
+        await batch.commit();
+        console.log("Batch write successful for assignments");
+        alert(`Berhasil menambah ${assignments.length} kurikulum!`);
+
+        assignmentCsvUpload.value = "";
+        await loadAndDisplayAssignments();
+      } catch (error) {
+        console.error("Error batch writing assignments:", error);
+        alert(
+          "Gagal mengupload kurikulum. Pastikan format CSV sudah benar, terutama format JSON di kolom materi."
+        );
+      }
+    };
+    reader.onerror = () => alert("Gagal membaca file.");
+    reader.readAsText(file);
+  });
+
+  // Fungsi untuk parsing CSV kurikulum
+  const parseAssignmentCSV = (str) => {
+    const lines = str.split("\n").filter((line) => line.trim() !== "");
+    const assignments = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map((v) => v.trim());
+      if (values.length !== 4) continue;
+
+      let materi;
+      try {
+        // Parsing string JSON dari kolom materi
+        materi = JSON.parse(values[3]);
+      } catch (e) {
+        console.error(`Gagal parsing JSON di baris ${i + 1}:`, values[3]);
+        continue; // Lewati baris jika JSON tidak valid
+      }
+
+      const assignment = {
+        programId: values[0],
+        semester: values[1],
+        grade: parseInt(values[2]),
+        materi: materi,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+      assignments.push(assignment);
+    }
+    return assignments;
   };
 }); // AKHIR DARI DOMContentLoaded
