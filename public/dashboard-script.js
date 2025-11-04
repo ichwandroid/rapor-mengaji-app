@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let allAssignments = []; // Variabel global untuk menyimpan semua data assignment
   let allKelas = []; // Variabel global untuk menyimpan semua kelas
+  let allStudents = []; // Variabel untuk menyimpan semua data siswa
 
   // --- FUNGSI-FUNGSI PEMBANTU ---
   const populateDropdown = (element, values, prefix = "") => {
@@ -140,6 +141,15 @@ document.addEventListener("DOMContentLoaded", () => {
             roleBadge =
               '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Guru GPAI</span>';
           }
+          let jobdescription = "";
+          if (userData.role === "guru_gpai" && userData.kelasDiampu) {
+            jobdescription = `Mengampu kelas: ${userData.kelasDiampu.join(", ")}`;
+          } else if (userData.role === "guru_gpq" && userData.assignments) {
+            const assignmentsDesc = userData.assignments
+              .map((a) => `Shift ${a.shift}: Kelompok ${a.kelompok}`)
+              .join("; ");
+            jobdescription = `Tugas: ${assignmentsDesc}`;
+          }
           row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
                           userData.name
@@ -148,15 +158,13 @@ document.addEventListener("DOMContentLoaded", () => {
                           userData.email
                         }</td>
                         <td class="px-6 py-4 whitespace-nowrap">${roleBadge}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${jobdescription}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                             <button class="edit-btn text-indigo-600 hover:text-indigo-900" data-user-id="${
                               doc.id
                             }" data-user-data='${JSON.stringify(
             userData
           ).replace(/'/g, "&apos;")}'>Edit</button>
-                            <button onclick="deleteUser('${doc.id}', '${
-            userData.email
-          }')" class="text-red-600 hover:text-red-900">Hapus</button>
                         </td>
                     `;
           userTableBody.appendChild(row);
@@ -266,9 +274,8 @@ document.addEventListener("DOMContentLoaded", () => {
     studentClassSelect.disabled = true;
   });
 
-  // Fungsi untuk memuat dan menampilkan data siswa (DIDEKLARASIKAN DI SINI)
+  // Fungsi untuk memuat dan menampilkan data siswa
   const loadAndDisplayStudents = async () => {
-    // Sekarang fungsi ini bisa mengakses studentTableBody karena sudah dideklarasikan di atas
     studentTableBody.innerHTML =
       '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Memuat data siswa...</td></tr>';
     try {
@@ -276,7 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
         db.collection("students").get(),
         db.collection("kelas").get(),
       ]);
-      const students = studentsSnapshot.docs.map((doc) => ({
+
+      allStudents = studentsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
@@ -285,46 +293,110 @@ document.addEventListener("DOMContentLoaded", () => {
         kelasMap[doc.id] = doc.data().nama;
       });
 
-      studentTableBody.innerHTML = "";
-      if (students.length === 0) {
-        studentTableBody.innerHTML =
-          '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada data siswa.</td></tr>';
-        return;
-      }
-      students.forEach((student) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
-                  student.nis
-                }</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
-                  student.nama
-                }</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
-                  student.grade
-                }</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
-                  kelasMap[student.kelasId] || student.kelasId
-                }</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
-                  student.shift
-                }</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
-                  student.kelompok
-                }</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button class="text-indigo-600 hover:text-indigo-900">Edit</button>
-                    <button class="text-red-600 hover:text-red-900">Hapus</button>
-                </td>
-            `;
-        studentTableBody.appendChild(row);
-      });
+      populateStudentFilters();
+      renderStudentTable(allStudents);
     } catch (error) {
       console.error("Error fetching students:", error);
       studentTableBody.innerHTML =
         '<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">Gagal memuat data.</td></tr>';
     }
   };
+
+  // Fungsi untuk mengisi dropdown filter
+  const populateStudentFilters = () => {
+    const grades = [...new Set(allStudents.map((s) => s.grade))];
+    const kelas = [...new Set(allStudents.map((s) => s.kelasId))];
+
+    populateDropdown(document.getElementById("student-filter-grade"), grades);
+    populateDropdown(document.getElementById("student-filter-class"), kelas);
+  };
+
+  // Fungsi untuk merender tabel
+  const renderStudentTable = (data) => {
+    studentTableBody.innerHTML = "";
+    if (data.length === 0) {
+      studentTableBody.innerHTML =
+        '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada data siswa yang cocok dengan filter.</td></tr>';
+      return;
+    }
+
+    // Buat map kelas untuk lookup yang cepat
+    const kelasMap = {};
+    // Asumsikan allKelas sudah terisi dari fungsi lain
+    allKelas.forEach((k) => {
+      kelasMap[k.id] = k.nama;
+    });
+
+    data.forEach((student) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+              student.nis
+            }</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
+              student.nama
+            }</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+              student.grade
+            }</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+              kelasMap[student.kelasId] || student.kelasId
+            }</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+              student.shift
+            }</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+              student.kelompok
+            }</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <button onclick="openEditStudentModal('${
+                  student.nis
+                }')" class="text-indigo-600 hover:text-indigo-900">Edit</button>
+                <button onclick="deleteStudent('${student.nis}', '${
+        student.nama
+      }')" class="text-red-600 hover:text-red-900">Hapus</button>
+            </td>
+        `;
+      studentTableBody.appendChild(row);
+    });
+  };
+
+  // Fungsi untuk menerapkan filter
+  const applyStudentFilters = () => {
+    const gradeFilter = document.getElementById("student-filter-grade").value;
+    const classFilter = document.getElementById("student-filter-class").value;
+    const shiftFilter = document.getElementById("student-filter-shift").value;
+
+    const filteredData = allStudents.filter((student) => {
+      return (
+        (!gradeFilter || student.grade.toString() === gradeFilter) &&
+        (!classFilter || student.kelasId === classFilter) &&
+        (!shiftFilter || student.shift.toString() === shiftFilter)
+      );
+    });
+
+    renderStudentTable(filteredData);
+  };
+
+  // Event Listeners untuk filter
+  document
+    .getElementById("student-filter-grade")
+    .addEventListener("change", applyStudentFilters);
+  document
+    .getElementById("student-filter-class")
+    .addEventListener("change", applyStudentFilters);
+  document
+    .getElementById("student-filter-shift")
+    .addEventListener("change", applyStudentFilters);
+
+  document
+    .getElementById("reset-student-filters")
+    .addEventListener("click", () => {
+      document.getElementById("student-filter-grade").value = "";
+      document.getElementById("student-filter-class").value = "";
+      document.getElementById("student-filter-shift").value = "";
+      renderStudentTable(allStudents);
+    });
 
   const populateFilters = () => {
     const programs = [...new Set(allAssignments.map((a) => a.programId))];
@@ -738,6 +810,120 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAssignmentTable(allAssignments);
   });
 
+  // --- LOGIKA EDIT DAN HAPUS SISWA ---
+
+  // Elemen Modal Edit Siswa
+  const editStudentModal = document.getElementById("edit-student-modal");
+  const cancelEditStudentBtn = document.getElementById("cancel-edit-student");
+  const editStudentForm = document.getElementById("edit-student-form");
+  const editStudentGradeSelect = document.getElementById("edit-student-grade");
+  const editStudentClassSelect = document.getElementById("edit-student-class");
+
+  // Fungsi untuk membuka modal edit dan mengisi data
+  window.openEditStudentModal = async (studentId) => {
+    try {
+      const doc = await db.collection("students").doc(studentId).get();
+      if (doc.exists) {
+        const student = doc.data();
+
+        // Isi form dengan data siswa
+        document.getElementById("edit-student-nis").value = student.nis;
+        document.getElementById("edit-student-name").value = student.nama;
+        document.getElementById("edit-student-grade").value = student.grade;
+        document.getElementById("edit-student-shift").value = student.shift;
+        document.getElementById("edit-student-group").value = student.kelompok;
+
+        // Isi dropdown kelas
+        const filteredKelas = allKelas.filter(
+          (k) => k.tingkat.toString() === student.grade.toString()
+        );
+        editStudentClassSelect.disabled = false;
+        populateDropdown(
+          editStudentClassSelect,
+          filteredKelas.map((k) => k.id)
+        );
+        // Pilih kelas yang sesuai
+        editStudentClassSelect.value = student.kelasId;
+
+        // Isi dropdown kelompok
+        populateDropdown(
+          document.getElementById("edit-student-group"),
+          Array.from({ length: 12 }, (_, i) => i + 1),
+          "Kelompok"
+        );
+
+        editStudentModal.classList.remove("hidden");
+      } else {
+        alert("Data siswa tidak ditemukan!");
+      }
+    } catch (error) {
+      console.error("Error getting student document:", error);
+      alert("Gagal mengambil data siswa.");
+    }
+  };
+
+  // Event listener untuk perubahan Grade di modal edit
+  editStudentGradeSelect.addEventListener("change", (e) => {
+    const selectedGrade = e.target.value;
+    const filteredKelas = allKelas.filter(
+      (k) => k.tingkat.toString() === selectedGrade
+    );
+    editStudentClassSelect.disabled = false;
+    populateDropdown(
+      editStudentClassSelect,
+      filteredKelas.map((k) => k.id)
+    );
+  });
+
+  // Event listener untuk submit form edit
+  editStudentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const studentId = document.getElementById("edit-student-nis").value;
+
+    const updatedData = {
+      nama: document.getElementById("edit-student-name").value,
+      grade: parseInt(document.getElementById("edit-student-grade").value),
+      kelasId: document.getElementById("edit-student-class").value,
+      shift: parseInt(document.getElementById("edit-student-shift").value),
+      kelompok: parseInt(document.getElementById("edit-student-group").value),
+    };
+
+    try {
+      await db.collection("students").doc(studentId).update(updatedData);
+      alert("Data siswa berhasil diperbarui!");
+      editStudentModal.classList.add("hidden");
+      await loadAndDisplayStudents();
+    } catch (error) {
+      console.error("Error updating student:", error);
+      alert("Gagal memperbarui data siswa.");
+    }
+  });
+
+  // Tutup modal edit
+  cancelEditStudentBtn.addEventListener("click", () => {
+    editStudentModal.classList.add("hidden");
+  });
+
+  // Fungsi hapus siswa
+  window.deleteStudent = (studentId, studentName) => {
+    const isConfirmed = confirm(
+      `Apakah Anda yakin ingin menghapus siswa ${studentName}?`
+    );
+    if (isConfirmed) {
+      db.collection("students")
+        .doc(studentId)
+        .delete()
+        .then(() => {
+          alert("Siswa berhasil dihapus.");
+          loadAndDisplayStudents();
+        })
+        .catch((error) => {
+          console.error("Error removing student: ", error);
+          alert("Gagal menghapus siswa.");
+        });
+    }
+  };
+
   // --- EKSEKUSI UTAMA ---
   auth.onAuthStateChanged(async (user) => {
     if (user) {
@@ -759,4 +945,75 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Sign out error:", error);
       });
   });
+
+  // --- LOGIKA UPLOAD CSV ---
+
+  const csvFileUpload = document.getElementById("csv-file-upload");
+
+  csvFileUpload.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvData = event.target.result;
+      const students = parseCSV(csvData);
+
+      if (students.length === 0) {
+        alert("File CSV kosong atau tidak valid.");
+        return;
+      }
+
+      // Konfirmasi sebelum mengupload
+      const isConfirmed = confirm(
+        `Anda akan menambah ${students.length} siswa. Lanjutkan?`
+      );
+      if (!isConfirmed) return;
+
+      try {
+        // Gunakan Batch Write untuk efisiensi
+        const batch = db.batch();
+        students.forEach((student) => {
+          const docRef = db.collection("students").doc(student.nis);
+          batch.set(docRef, student);
+        });
+
+        await batch.commit();
+        console.log("Batch write successful");
+        alert(`Berhasil menambah ${students.length} siswa!`);
+
+        // Reset input file dan muat ulang tabel
+        csvFileUpload.value = "";
+        await loadAndDisplayStudents();
+      } catch (error) {
+        console.error("Error batch writing students:", error);
+        alert("Gagal mengupload data siswa. Pastikan format CSV sudah benar.");
+      }
+    };
+    reader.onerror = () => alert("Gagal membaca file.");
+    reader.readAsText(file);
+  });
+
+  // Fungsi sederhana untuk parsing CSV
+  const parseCSV = (str) => {
+    const lines = str.split("\n").filter((line) => line.trim() !== "");
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const students = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map((v) => v.trim());
+      if (values.length !== headers.length) continue; // Lewati baris yang tidak valid
+
+      const student = {
+        nis: values[0],
+        nama: values[1],
+        grade: parseInt(values[2]),
+        kelasId: values[3],
+        shift: parseInt(values[4]),
+        kelompok: parseInt(values[5]),
+      };
+      students.push(student);
+    }
+    return students;
+  };
 }); // AKHIR DARI DOMContentLoaded
