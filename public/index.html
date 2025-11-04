@@ -1,43 +1,104 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Aplikasi Rapor</title>
-    
+
     <!-- TAILWIND CSS CDN -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // atau 'media'
+        }
+    </script>
+
     <!-- Kita tidak memerlukan file style.css lagi -->
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen">
     <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <form id="login-form">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Login Guru</h2>
-            
+
             <div class="mb-4">
                 <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
-                <input type="email" id="email" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <input type="email" id="email" required
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             </div>
-            
+
             <div class="mb-6">
                 <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                <input type="password" id="password" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline">
+                <input type="password" id="password" required
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline">
             </div>
-            
-            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+
+            <button type="submit"
+                class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                 Masuk
             </button>
-            
+
             <p id="error-message" class="text-red-500 text-center text-xs mt-4"></p>
         </form>
     </div>
 
+    <!-- Tombol Tema (Light/Dark Mode) -->
+    <button id="theme-toggle"
+        class="fixed bottom-5 right-5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg shadow-lg hover:scale-110 transition-transform duration-200 z-50">
+        <!-- Ikon Matahari (untuk Light Mode) -->
+        <span class="material-symbols-outlined" id="sun-icon">
+            meal_lunch
+        </span>
+        <!-- Ikon Bulan (untuk Dark Mode) -->
+        <span class="material-symbols-outlined" id="moon-icon">
+            meal_dinner
+        </span>
+    </button>
+
+    <!-- Kode Tema -->
+    <script>
+            (function () {
+                const themeToggle = document.getElementById('theme-toggle');
+                const sunIcon = document.getElementById('sun-icon');
+                const moonIcon = document.getElementById('moon-icon');
+                const html = document.documentElement;
+
+                // Fungsi untuk mengatur tema
+                const setTheme = (theme) => {
+                    if (theme === 'dark') {
+                        html.classList.add('dark');
+                        moonIcon.classList.add('hidden');
+                        sunIcon.classList.remove('hidden');
+                    } else {
+                        html.classList.remove('dark');
+                        sunIcon.classList.add('hidden');
+                        moonIcon.classList.remove('hidden');
+                    }
+                    localStorage.setItem('theme', theme);
+                };
+
+                // Event listener untuk tombol
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = localStorage.getItem('theme') || 'light';
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    setTheme(newTheme);
+                });
+
+                // Cek tema yang tersimpan saat halaman dimuat
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                setTheme(savedTheme);
+            })();
+    </script>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    
+
     <!-- Kode JavaScript kita -->
     <script src="script.js"></script>
 </body>
+
 </html>
