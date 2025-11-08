@@ -200,6 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  window.loadAndDisplayAssignments = loadAndDisplayAssignments; // Expose function to global scope
+
   // Fungsi untuk mengambil semua data kelas
   const fetchAllKelas = async () => {
     try {
@@ -429,10 +431,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.semester}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.grade}</td>
                 <td class="px-6 py-4 text-sm text-gray-900">${materiDisplay}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><button class="text-red-600 hover:text-red-900">Hapus</button></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><button onclick="deleteAssignment('${assignment.id}')" class="text-red-600 hover:text-red-900">Hapus</button></td>
             `;
       assignmentTableBody.appendChild(row);
     });
+  };
+
+  // --- FUNGSI HAPUS KURIKULUM (VERSI LEBIH RAPI) ---
+
+  window.deleteAssignment = (assignmentId) => {
+    const isConfirmed = confirm(
+      "Apakah Anda yakin ingin menghapus kurikulum ini?"
+    );
+    if (isConfirmed) {
+      db.collection("programAssignments")
+        .doc(assignmentId)
+        .delete()
+        .then(() => {
+          alert("Kurikulum berhasil dihapus.");
+          // Panggil fungsi global untuk memuat ulang tabel tanpa reload
+          window.loadAndDisplayAssignments();
+        })
+        .catch((error) => {
+          console.error("Error removing assignment: ", error);
+          alert("Gagal menghapus kurikulum.");
+        });
+    }
   };
 
   const applyFilters = () => {
@@ -790,7 +814,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await db.collection("programAssignments").add(assignmentData);
       console.log("Program assignment successfully created!");
       alert("Kurikulum berhasil ditetapkan!");
-      window.location.reload(); // Refresh untuk menampilkan data terbaru
+      // window.location.reload(); // Refresh untuk menampilkan data terbaru
+      window.loadAndDisplayAssignments(); // Muat ulang tabel tanpa refresh
       addAssignmentModal.classList.add("hidden");
       addAssignmentForm.reset();
       // assignmentMateriContainer.innerHTML =
@@ -948,7 +973,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 
-  // --- LOGIKA UPLOAD CSV ---
+  // --- LOGIKA UPLOAD CSV UNTUK SISWA ---
 
   const csvFileUpload = document.getElementById("csv-file-upload");
 
@@ -1017,82 +1042,5 @@ document.addEventListener("DOMContentLoaded", () => {
       students.push(student);
     }
     return students;
-  };
-
-  // --- LOGIKA UPLOAD CSV UNTUK KURIKULUM ---
-
-  const assignmentCsvUpload = document.getElementById("assignment-csv-upload");
-
-  assignmentCsvUpload.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const csvData = event.target.result;
-      const assignments = parseAssignmentCSV(csvData);
-
-      if (assignments.length === 0) {
-        alert("File CSV kosong atau tidak valid.");
-        return;
-      }
-
-      const isConfirmed = confirm(
-        `Anda akan menambah ${assignments.length} kurikulum. Lanjutkan?`
-      );
-      if (!isConfirmed) return;
-
-      try {
-        const batch = db.batch();
-        assignments.forEach((assignment) => {
-          const docRef = db.collection("programAssignments").doc(); // Gunakan Auto-ID
-          batch.set(docRef, assignment);
-        });
-
-        await batch.commit();
-        console.log("Batch write successful for assignments");
-        alert(`Berhasil menambah ${assignments.length} kurikulum!`);
-
-        assignmentCsvUpload.value = "";
-        await loadAndDisplayAssignments();
-      } catch (error) {
-        console.error("Error batch writing assignments:", error);
-        alert(
-          "Gagal mengupload kurikulum. Pastikan format CSV sudah benar, terutama format JSON di kolom materi."
-        );
-      }
-    };
-    reader.onerror = () => alert("Gagal membaca file.");
-    reader.readAsText(file);
-  });
-
-  // Fungsi untuk parsing CSV kurikulum
-  const parseAssignmentCSV = (str) => {
-    const lines = str.split("\n").filter((line) => line.trim() !== "");
-    const assignments = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim());
-      if (values.length !== 4) continue;
-
-      let materi;
-      try {
-        // Parsing string JSON dari kolom materi
-        materi = JSON.parse(values[3]);
-      } catch (e) {
-        console.error(`Gagal parsing JSON di baris ${i + 1}:`, values[3]);
-        continue; // Lewati baris jika JSON tidak valid
-      }
-
-      const assignment = {
-        programId: values[0],
-        semester: values[1],
-        grade: parseInt(values[2]),
-        materi: materi,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      };
-      assignments.push(assignment);
-    }
-    return assignments;
   };
 }); // AKHIR DARI DOMContentLoaded
