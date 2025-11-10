@@ -9,6 +9,8 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <!-- TAILWIND CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class', // atau 'media'
@@ -113,6 +115,16 @@
                                     class="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded">
                                     + Tambah Kurikulum Baru
                                 </button>
+                                <label for="assignment-csv-upload"
+                                    class="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-4 rounded cursor-pointer">
+                                    Upload Banyak Kurikulum (CSV)
+                                </label>
+                                <!-- TAMBAHKAN TOMBOL INI -->
+                                <button id="download-assignment-csv"
+                                    class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
+                                    Download CSV
+                                </button>
+                                <input type="file" id="assignment-csv-upload" accept=".csv" class="hidden">
                             </div>
                         </div>
 
@@ -613,6 +625,80 @@
                         <button type="submit"
                             class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                             Simpan Kurikulum
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Kurikulum -->
+    <div id="edit-assignment-modal"
+        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-10 mx-auto p-5 border w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Edit Kurikulum</h3>
+
+                <form id="edit-assignment-form">
+                    <!-- ID Assignment (disembunyikan) -->
+                    <input type="hidden" id="edit-assignment-id">
+
+                    <!-- Pilih Program -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-assignment-program">Pilih
+                            Program</label>
+                        <select id="edit-assignment-program" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Program --</option>
+                            <option value="Tahfizh Al-Qur’An">Tahfizh Al-Qur’An</option>
+                            <option value="Tahfizh Do'A Sehari-Hari">Tahfizh Do'A Sehari-Hari</option>
+                            <option value="Tathbiq Ibadah">Tathbiq Ibadah</option>
+                        </select>
+                    </div>
+
+                    <!-- Pilih Semester -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-assignment-semester">Pilih
+                            Semester</label>
+                        <select id="edit-assignment-semester" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Semester --</option>
+                            <option value="Ganjil">Ganjil</option>
+                            <option value="Genap">Genap</option>
+                        </select>
+                    </div>
+
+                    <!-- Pilih Grade -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-assignment-grade">Pilih
+                            Grade</label>
+                        <select id="edit-assignment-grade" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                            <option value="">-- Pilih Grade --</option>
+                            <option value="1">Grade 1</option>
+                            <option value="2">Grade 2</option>
+                            <option value="3">Grade 3</option>
+                            <option value="4">Grade 4</option>
+                            <option value="5">Grade 5</option>
+                            <option value="6">Grade 6</option>
+                        </select>
+                    </div>
+
+                    <!-- Input Materi (Akan berubah secara dinamis) -->
+                    <div id="edit-assignment-materi-container" class="mb-4 border p-4 rounded">
+                        <h4 class="font-bold mb-3">Materi</h4>
+                        <p class="text-gray-500">Pilih program terlebih dahulu.</p>
+                    </div>
+
+                    <!-- Tombol -->
+                    <div class="flex justify-end space-x-2 mt-6">
+                        <button type="button" id="cancel-edit-assignment"
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Batal
+                        </button>
+                        <button type="submit"
+                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            Simpan Perubahan
                         </button>
                     </div>
                 </form>

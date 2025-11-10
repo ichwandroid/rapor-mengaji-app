@@ -27,7 +27,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const studentManagementSection = document.getElementById(
     "student-management-section"
   );
-  const stuendtTableBody = document.getElementById("student-table-body");
+  const downloadAssignmentCsvBtn = document.getElementById(
+    "download-assignment-csv"
+  );
+
+  // const stuendtTableBody = document.getElementById("student-table-body");
 
   // --- ELEMEN MODAL ---
   const addUserModal = document.getElementById("add-user-modal");
@@ -61,6 +65,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const studentClassSelect = document.getElementById("student-class");
   const studentGroupSelect = document.getElementById("student-group");
   const studentTableBody = document.getElementById("student-table-body");
+
+  const editAssignmentModal = document.getElementById("edit-assignment-modal");
+  const cancelEditAssignmentBtn = document.getElementById(
+    "cancel-edit-assignment"
+  );
+  const editAssignmentForm = document.getElementById("edit-assignment-form");
+  const editAssignmentProgramSelect = document.getElementById(
+    "edit-assignment-program"
+  );
+  const editAssignmentMateriContainer = document.getElementById(
+    "edit-assignment-materi-container"
+  );
 
   // --- ELEMEN FILTER ---
   const filterProgram = document.getElementById("filter-program");
@@ -427,15 +443,40 @@ document.addEventListener("DOMContentLoaded", () => {
         materiDisplay = assignment.materi.deskripsi;
       }
       row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${assignment.programId}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.semester}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.grade}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
+                  assignment.programId
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                  assignment.semester
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                  assignment.grade
+                }</td>
                 <td class="px-6 py-4 text-sm text-gray-900">${materiDisplay}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><button onclick="deleteAssignment('${assignment.id}')" class="text-red-600 hover:text-red-900">Hapus</button></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button class="edit-assignment-btn text-indigo-600 hover:text-indigo-900" data-assignment-id="${
+                    assignment.id
+                  }" data-assignment='${JSON.stringify(assignment).replace(
+        /'/g,
+        "&apos;"
+      )}'>Edit</button>
+                  <button onclick="deleteAssignment('${
+                    assignment.id
+                  }')" class="text-red-600 hover:text-red-900">Hapus</button>
+                </td>
             `;
       assignmentTableBody.appendChild(row);
     });
   };
+
+  assignmentTableBody.addEventListener("click", (e) => {
+    // Periksa apakah yang diklik adalah tombol edit
+    if (e.target.classList.contains("edit-assignment-btn")) {
+      const assignmentId = e.target.dataset.assignmentId;
+      const assignmentData = JSON.parse(e.target.dataset.assignment);
+      openEditAssignmentModal(assignmentId, assignmentData);
+    }
+  });
 
   // --- FUNGSI HAPUS KURIKULUM (VERSI LEBIH RAPI) ---
 
@@ -1043,4 +1084,284 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return students;
   };
+
+  // --- LOGIKA UPLOAD CSV KURIKULUM (VERSI SEDERHANA) ---
+
+  const assignmentCsvUpload = document.getElementById("assignment-csv-upload");
+
+  assignmentCsvUpload.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return alert("Tidak ada file dipilih.");
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        let csvText = event.target.result;
+
+        // Hapus BOM jika ada
+        if (csvText.charCodeAt(0) === 0xFEFF) {
+            csvText = csvText.slice(1);
+        }
+
+        // Parse menggunakan PapaParse
+        const result = Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+        });
+
+        if (result.errors.length > 0) {
+            console.error("CSV Parse Error:", result.errors);
+            alert("Format CSV tidak valid. Periksa kembali file Anda.");
+            return;
+        }
+
+        const rawRows = result.data;
+
+        const assignments = [];
+
+        rawRows.forEach((row, index) => {
+            const { programId, semester, grade, materi } = row;
+
+            if (!programId || !semester || !grade || !materi) {
+                console.warn("Lewati baris karena kolom tidak lengkap:", row);
+                return;
+            }
+
+            let materiObj;
+            try {
+                materiObj = JSON.parse(materi);
+            } catch (err) {
+                console.error(`Gagal parsing JSON materi pada baris ${index + 2}`, materi, err);
+                return;
+            }
+
+            assignments.push({
+                programId,
+                semester,
+                grade: parseInt(grade),
+                materi: materiObj,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+        });
+
+        if (assignments.length === 0) {
+            alert("File CSV kosong atau tidak valid.");
+            return;
+        }
+
+        const confirmUpload = confirm(
+            `Anda akan menambah ${assignments.length} kurikulum. Lanjutkan?`
+        );
+        if (!confirmUpload) return;
+
+        try {
+            const batch = db.batch();
+            assignments.forEach((data) => {
+                const ref = db.collection("programAssignments").doc();
+                batch.set(ref, data);
+            });
+
+            await batch.commit();
+            alert(`Berhasil menambah ${assignments.length} kurikulum!`);
+
+            assignmentCsvUpload.value = "";
+            await loadAndDisplayAssignments();
+        } catch (error) {
+            console.error("Error during batch upload:", error);
+            alert("Gagal mengupload kurikulum. Periksa format CSV.");
+        }
+    };
+
+    reader.onerror = () => alert("Gagal membaca file CSV.");
+    reader.readAsText(file, "utf-8");
+});
+
+  // --- LOGIKA EDIT KURIKULUM ---
+
+  // Fungsi untuk membuka modal dan mengisi data
+  const openEditAssignmentModal = (assignmentId, assignmentData) => {
+    console.log("Membuka modal edit untuk:", assignmentId, assignmentData);
+
+    // Isi form dengan data yang ada
+    document.getElementById("edit-assignment-id").value = assignmentId;
+    editAssignmentProgramSelect.value = assignmentData.programId;
+    document.getElementById("edit-assignment-semester").value =
+      assignmentData.semester;
+    document.getElementById("edit-assignment-grade").value =
+      assignmentData.grade;
+
+    // Trigger event 'change' untuk menampilkan form materi yang benar
+    editAssignmentProgramSelect.dispatchEvent(new Event("change"));
+
+    // Isi field materi setelah form muncul (dengan sedikit delay)
+    setTimeout(() => {
+      const materi = assignmentData.materi;
+      if (
+        editAssignmentProgramSelect.value === "Tahfizh Al-Qur’An" &&
+        materi.namaSurah
+      ) {
+        document.getElementById("edit-materi-surah").value = materi.namaSurah;
+        document.getElementById("edit-materi-ayat").value = materi.jumlahAyat;
+      } else if (materi.deskripsi) {
+        document.getElementById("edit-materi-deskripsi").value =
+          materi.deskripsi;
+      }
+    }, 100); // Delay kecil untuk memastikan elemen sudah ada
+
+    editAssignmentModal.classList.remove("hidden");
+  };
+
+  // Event listener untuk perubahan dropdown program (sama seperti modal tambah)
+  editAssignmentProgramSelect.addEventListener("change", (e) => {
+    const selectedProgramId = e.target.value;
+    let materiHTML = "";
+
+    if (selectedProgramId === "Tahfizh Al-Qur’An") {
+      materiHTML = `
+            <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-materi-surah">Nama Surah</label>
+                <input type="text" id="edit-materi-surah" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-materi-ayat">Jumlah Ayat</label>
+                <input type="number" id="edit-materi-ayat" required min="1" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+            </div>
+        `;
+    } else if (selectedProgramId) {
+      materiHTML = `
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-materi-deskripsi">Deskripsi Materi</label>
+                <textarea id="edit-materi-deskripsi" required rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight"></textarea>
+            </div>
+        `;
+    } else {
+      materiHTML =
+        '<p class="text-gray-500">Pilih program terlebih dahulu.</p>';
+    }
+
+    editAssignmentMateriContainer.innerHTML = materiHTML;
+  });
+
+  // Tutup modal
+  cancelEditAssignmentBtn.addEventListener("click", () => {
+    editAssignmentModal.classList.add("hidden");
+    editAssignmentForm.reset();
+  });
+
+  // Proses submit form edit
+  editAssignmentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const assignmentId = document.getElementById("edit-assignment-id").value;
+    const programId = editAssignmentProgramSelect.value;
+    const semester = document.getElementById("edit-assignment-semester").value;
+    const grade = parseInt(
+      document.getElementById("edit-assignment-grade").value
+    );
+
+    let materi = {};
+
+    if (programId === "Tahfizh Al-Qur’An") {
+      materi.namaSurah = document.getElementById("edit-materi-surah").value;
+      materi.jumlahAyat = parseInt(
+        document.getElementById("edit-materi-ayat").value
+      );
+    } else {
+      materi.deskripsi = document.getElementById("edit-materi-deskripsi").value;
+    }
+
+    const updatedData = {
+      programId: programId,
+      semester: semester,
+      grade: grade,
+      materi: materi,
+    };
+
+    try {
+      await db
+        .collection("programAssignments")
+        .doc(assignmentId)
+        .update(updatedData);
+      console.log("Assignment successfully updated!");
+      alert("Kurikulum berhasil diperbarui!");
+
+      editAssignmentModal.classList.add("hidden");
+      editAssignmentForm.reset();
+
+      await loadAndDisplayAssignments(); // Muat ulang tabel
+    } catch (error) {
+      console.error("Error updating assignment:", error);
+      alert("Gagal memperbarui kurikulum: " + error.message);
+    }
+  });
+
+  // Fungsi untuk mengubah array objek kurikulum menjadi string CSV
+  const assignmentsToCSV = (assignments) => {
+    if (!assignments || assignments.length === 0) {
+      return null;
+    }
+
+    const headers = ["programId", "semester", "grade", "materi"];
+    const csvRows = [headers.join(",")];
+
+    assignments.forEach((assignment) => {
+      let materiString;
+
+      // Ubah objek materi kembali ke string JSON
+      try {
+        materiString = JSON.stringify(assignment.materi);
+      } catch (e) {
+        console.error("Error stringifying materi:", assignment.materi);
+        materiString = ""; // Kosongkan jika gagal
+      }
+
+      const row = [
+        assignment.programId,
+        assignment.semester,
+        assignment.grade,
+        `"${materiString}"`, // Apit dengan tanda kutip untuk aman
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    return csvRows.join("\n");
+  };
+
+  // Event listener untuk tombol download
+  downloadAssignmentCsvBtn.addEventListener("click", () => {
+    if (allAssignments.length === 0) {
+      alert("Tidak ada data kurikulum untuk diunduh.");
+      return;
+    }
+
+    const csvData = assignmentsToCSV(allAssignments);
+
+    if (csvData) {
+      // Buat Blob dari data CSV
+      const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+
+      // Buat URL untuk Blob
+      const url = URL.createObjectURL(blob);
+
+      // Buat elemen <a> sementara untuk memicu unduhan
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `kurikulum_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+      link.style.visibility = "hidden";
+
+      // Tambahkan ke DOM, klik, lalu hapus
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Bersihkan URL untuk menghindari memory leak
+      URL.revokeObjectURL(url);
+
+      console.log("CSV downloaded successfully");
+    } else {
+      alert("Gagal membuat file CSV.");
+    }
+  });
 }); // AKHIR DARI DOMContentLoaded
