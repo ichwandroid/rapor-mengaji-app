@@ -116,9 +116,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (userData.role === "admin") {
           adminContent.classList.remove("hidden");
           loadAndDisplayUsers();
+
         } else if (userData.role === "guru_gpq") {
           guruGpqContent.classList.remove("hidden");
           // TODO: Load data for GPQ
+          
         } else if (userData.role === "guru_gpai") {
           guruGpaiContent.classList.remove("hidden");
           // TODO: Load data for GPAI
@@ -267,6 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
   addStudentForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const studentData = {
+      nisn: document.getElementById("student-nisn").value,
       nis: document.getElementById("student-nis").value,
       nama: document.getElementById("student-name").value,
       grade: parseInt(studentGradeSelect.value),
@@ -350,6 +353,9 @@ document.addEventListener("DOMContentLoaded", () => {
     data.forEach((student) => {
       const row = document.createElement("tr");
       row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+              student.nisn
+            }</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
               student.nis
             }</td>
@@ -895,6 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const student = doc.data();
 
         // Isi form dengan data siswa
+        document.getElementById("edit-student-nisn").value = student.nisn;
         document.getElementById("edit-student-nis").value = student.nis;
         document.getElementById("edit-student-name").value = student.nama;
         document.getElementById("edit-student-grade").value = student.grade;
@@ -949,6 +956,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const studentId = document.getElementById("edit-student-nis").value;
 
     const updatedData = {
+      nisn: document.getElementById("edit-student-nisn").value,
       nama: document.getElementById("edit-student-name").value,
       grade: parseInt(document.getElementById("edit-student-grade").value),
       kelasId: document.getElementById("edit-student-class").value,
@@ -1073,12 +1081,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (values.length !== headers.length) continue; // Lewati baris yang tidak valid
 
       const student = {
-        nis: values[0],
-        nama: values[1],
-        grade: parseInt(values[2]),
-        kelasId: values[3],
-        shift: parseInt(values[4]),
-        kelompok: parseInt(values[5]),
+        nisn: values[0],
+        nis: values[1],
+        nama: values[2],
+        grade: parseInt(values[3]),
+        kelasId: values[4],
+        shift: parseInt(values[5]),
+        kelompok: parseInt(values[6]),
       };
       students.push(student);
     }

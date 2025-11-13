@@ -258,6 +258,9 @@
                                             NISN</th>
                                         <th
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            NIS</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Nama</th>
                                         <th
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -713,6 +716,13 @@
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Tambah Siswa Baru</h3>
 
                 <form id="add-student-form">
+                    <!-- NISN -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="student-nisn">Nomor Induk Siswa
+                            Nasional (NISN)</label>
+                        <input type="text" id="student-nisn" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    </div>
                     <!-- NIS -->
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="student-nis">Nomor Induk Siswa
@@ -799,6 +809,13 @@
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Edit Data Siswa</h3>
 
                 <form id="edit-student-form">
+                    <!-- NISN (Read-only) -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-student-nisn">Nomor Induk
+                            Siswa Nasional (NISN)</label>
+                        <input type="text" id="edit-student-nisn" required readonly
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight bg-gray-100">
+                    </div>
                     <!-- NIS (Read-only) -->
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-student-nis">Nomor Induk
