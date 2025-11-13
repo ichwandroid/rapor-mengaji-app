@@ -111,19 +111,19 @@
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-2xl font-semibold text-gray-700">Manajemen Program & Kurikulum</h2>
                             <div class="space-x-2">
-                                <button data-action="openAddAssignmentModal"
-                                    class="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded">
+                                <a data-action="openAddAssignmentModal"
+                                    class="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded cursor-pointer">
                                     + Tambah Kurikulum Baru
-                                </button>
+                                </a>
                                 <label for="assignment-csv-upload"
                                     class="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-4 rounded cursor-pointer">
-                                    Upload Banyak Kurikulum (CSV)
+                                    Upload Kurikulum
                                 </label>
                                 <!-- TAMBAHKAN TOMBOL INI -->
-                                <button id="download-assignment-csv"
-                                    class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
-                                    Download CSV
-                                </button>
+                                <a id="download-assignment-csv"
+                                    class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer">
+                                    Download
+                                </a>
                                 <input type="file" id="assignment-csv-upload" accept=".csv" class="hidden">
                             </div>
                         </div>
@@ -199,14 +199,14 @@
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-2xl font-semibold text-gray-700">Manajemen Siswa</h2>
                             <div class="space-x-2">
-                                <button data-action="openAddStudentModal"
-                                    class="bg-purple-600 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded">
+                                <a data-action="openAddStudentModal"
+                                    class="bg-purple-600 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded cursor-pointer">
                                     + Tambah Siswa Baru
-                                </button>
+                                </a>
                                 <!-- TAMBAHKAN TOMBOL INI -->
                                 <label for="csv-file-upload"
-                                    class="bg-teal-600 hover:bg-teal-800 text-white font-bold py-3 px-4 rounded cursor-pointer">
-                                    Upload Banyak Siswa (CSV)
+                                    class="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-4 rounded cursor-pointer">
+                                    Upload Siswa
                                 </label>
                                 <input type="file" id="csv-file-upload" accept=".csv" class="hidden">
                             </div>

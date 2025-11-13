@@ -116,11 +116,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (userData.role === "admin") {
           adminContent.classList.remove("hidden");
           loadAndDisplayUsers();
-
         } else if (userData.role === "guru_gpq") {
           guruGpqContent.classList.remove("hidden");
           // TODO: Load data for GPQ
-          
         } else if (userData.role === "guru_gpai") {
           guruGpaiContent.classList.remove("hidden");
           // TODO: Load data for GPAI
@@ -328,7 +326,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Fungsi untuk mengisi dropdown filter
   const populateStudentFilters = () => {
     const grades = [...new Set(allStudents.map((s) => s.grade))];
+    grades.sort((a, b) => a - b); // Urutkan secara numerik
     const kelas = [...new Set(allStudents.map((s) => s.kelasId))];
+    kelas.sort();
 
     populateDropdown(document.getElementById("student-filter-grade"), grades);
     populateDropdown(document.getElementById("student-filter-class"), kelas);
@@ -428,6 +428,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const programs = [...new Set(allAssignments.map((a) => a.programId))];
     const semesters = [...new Set(allAssignments.map((a) => a.semester))];
     const grades = [...new Set(allAssignments.map((a) => a.grade))];
+    // urutkan grades secara numerik
+    grades.sort((a, b) => a - b);
     populateDropdown(filterProgram, programs);
     populateDropdown(filterSemester, semesters);
     populateDropdown(filterGrade, grades);
@@ -1104,85 +1106,89 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-        let csvText = event.target.result;
+      let csvText = event.target.result;
 
-        // Hapus BOM jika ada
-        if (csvText.charCodeAt(0) === 0xFEFF) {
-            csvText = csvText.slice(1);
+      // Hapus BOM jika ada
+      if (csvText.charCodeAt(0) === 0xfeff) {
+        csvText = csvText.slice(1);
+      }
+
+      // Parse menggunakan PapaParse
+      const result = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+      });
+
+      if (result.errors.length > 0) {
+        console.error("CSV Parse Error:", result.errors);
+        alert("Format CSV tidak valid. Periksa kembali file Anda.");
+        return;
+      }
+
+      const rawRows = result.data;
+
+      const assignments = [];
+
+      rawRows.forEach((row, index) => {
+        const { programId, semester, grade, materi } = row;
+
+        if (!programId || !semester || !grade || !materi) {
+          console.warn("Lewati baris karena kolom tidak lengkap:", row);
+          return;
         }
 
-        // Parse menggunakan PapaParse
-        const result = Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-        });
-
-        if (result.errors.length > 0) {
-            console.error("CSV Parse Error:", result.errors);
-            alert("Format CSV tidak valid. Periksa kembali file Anda.");
-            return;
-        }
-
-        const rawRows = result.data;
-
-        const assignments = [];
-
-        rawRows.forEach((row, index) => {
-            const { programId, semester, grade, materi } = row;
-
-            if (!programId || !semester || !grade || !materi) {
-                console.warn("Lewati baris karena kolom tidak lengkap:", row);
-                return;
-            }
-
-            let materiObj;
-            try {
-                materiObj = JSON.parse(materi);
-            } catch (err) {
-                console.error(`Gagal parsing JSON materi pada baris ${index + 2}`, materi, err);
-                return;
-            }
-
-            assignments.push({
-                programId,
-                semester,
-                grade: parseInt(grade),
-                materi: materiObj,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            });
-        });
-
-        if (assignments.length === 0) {
-            alert("File CSV kosong atau tidak valid.");
-            return;
-        }
-
-        const confirmUpload = confirm(
-            `Anda akan menambah ${assignments.length} kurikulum. Lanjutkan?`
-        );
-        if (!confirmUpload) return;
-
+        let materiObj;
         try {
-            const batch = db.batch();
-            assignments.forEach((data) => {
-                const ref = db.collection("programAssignments").doc();
-                batch.set(ref, data);
-            });
-
-            await batch.commit();
-            alert(`Berhasil menambah ${assignments.length} kurikulum!`);
-
-            assignmentCsvUpload.value = "";
-            await loadAndDisplayAssignments();
-        } catch (error) {
-            console.error("Error during batch upload:", error);
-            alert("Gagal mengupload kurikulum. Periksa format CSV.");
+          materiObj = JSON.parse(materi);
+        } catch (err) {
+          console.error(
+            `Gagal parsing JSON materi pada baris ${index + 2}`,
+            materi,
+            err
+          );
+          return;
         }
+
+        assignments.push({
+          programId,
+          semester,
+          grade: parseInt(grade),
+          materi: materiObj,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (assignments.length === 0) {
+        alert("File CSV kosong atau tidak valid.");
+        return;
+      }
+
+      const confirmUpload = confirm(
+        `Anda akan menambah ${assignments.length} kurikulum. Lanjutkan?`
+      );
+      if (!confirmUpload) return;
+
+      try {
+        const batch = db.batch();
+        assignments.forEach((data) => {
+          const ref = db.collection("programAssignments").doc();
+          batch.set(ref, data);
+        });
+
+        await batch.commit();
+        alert(`Berhasil menambah ${assignments.length} kurikulum!`);
+
+        assignmentCsvUpload.value = "";
+        await loadAndDisplayAssignments();
+      } catch (error) {
+        console.error("Error during batch upload:", error);
+        alert("Gagal mengupload kurikulum. Periksa format CSV.");
+      }
     };
 
     reader.onerror = () => alert("Gagal membaca file CSV.");
     reader.readAsText(file, "utf-8");
-});
+  });
 
   // --- LOGIKA EDIT KURIKULUM ---
 
