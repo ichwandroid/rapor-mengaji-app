@@ -117,93 +117,120 @@ document.addEventListener("DOMContentLoaded", () => {
           adminContent.classList.remove("hidden");
           loadAndDisplayUsers();
         } else if (userData.role === "guru_gpq") {
-           console.log('Ini adalah Guru GPQ');
-    const guruGpqContent = document.getElementById('guru-gpq-content');
-    guruGpqContent.classList.remove('hidden');
-    
-    const studentListContainer = document.getElementById('student-list-gpq');
-    const assignments = userData.assignments; // Misal: [{shift: 1, kelompok: 5}, ...]
+          console.log("Ini adalah Guru GPQ");
+          const guruGpqContent = document.getElementById("guru-gpq-content");
+          guruGpqContent.classList.remove("hidden");
 
-    if (assignments && assignments.length > 0) {
-        studentListContainer.innerHTML = '<p class="text-gray-500">Mengambil data siswa dan kurikulum...</p>';
+          const studentListContainer =
+            document.getElementById("student-list-gpq");
+          const assignments = userData.assignments; // Misal: [{shift: 1, kelompok: 5}, ...]
 
-        try {
-            // Pastikan data kelas telah tersedia
-            if (allKelas.length === 0) {
+          if (assignments && assignments.length > 0) {
+            studentListContainer.innerHTML =
+              '<p class="text-gray-500">Mengambil data siswa dan kurikulum...</p>';
+
+            try {
+              // Pastikan data kelas telah tersedia
+              if (allKelas.length === 0) {
                 await fetchAllKelas();
-            }
-            const kelasMap = {};
-            allKelas.forEach(k => { kelasMap[k.id] = k.nama; });
+              }
+              const kelasMap = {};
+              allKelas.forEach((k) => {
+                kelasMap[k.id] = k.nama;
+              });
 
-            // Buat array Promise untuk mengambil siswa sesuai tugas guru
-            const studentQueries = assignments.map(assignment => {
-                return db.collection('students')
-                         .where('shift', '==', assignment.shift)
-                         .where('kelompok', '==', assignment.kelompok)
-                         .get();
-            });
+              // Buat array Promise untuk mengambil siswa sesuai tugas guru
+              const studentQueries = assignments.map((assignment) => {
+                return db
+                  .collection("students")
+                  .where("shift", "==", assignment.shift)
+                  .where("kelompok", "==", assignment.kelompok)
+                  .get();
+              });
 
-            // Menunggu semua query selesai
-            const results = await Promise.all(studentQueries);
+              // Menunggu semua query selesai
+              const results = await Promise.all(studentQueries);
 
-            // Gabungkan semua hasil query
-            let allStudents = [];
-            results.forEach(querySnapshot => {
-                querySnapshot.forEach(doc => {
-                    allStudents.push({ id: doc.id, ...doc.data() });
+              // Gabungkan semua hasil query
+              let allStudents = [];
+              results.forEach((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                  allStudents.push({ id: doc.id, ...doc.data() });
                 });
-            });
+              });
 
-            // Urutkan berdasarkan nama
-            allStudents.sort((a, b) => a.nama.localeCompare(b.nama));
+              // Urutkan berdasarkan nama
+              allStudents.sort((a, b) => a.nama.localeCompare(b.nama));
 
-            // Ambil semua programAssignments untuk efisiensi
-            const assignmentSnapshot = await db.collection('programAssignments').get();
-            const programAssignments = {};
-            assignmentSnapshot.forEach(doc => {
+              // Ambil semua programAssignments untuk efisiensi
+              const assignmentSnapshot = await db
+                .collection("programAssignments")
+                .get();
+              const programAssignments = {};
+              assignmentSnapshot.forEach((doc) => {
                 const data = doc.data();
                 const key = `${data.grade}_${data.semester}_${data.programId}`;
                 programAssignments[key] = data.materi;
-            });
+              });
 
-            studentListContainer.innerHTML = ''; // Kosongkan loading text
-            if (allStudents.length === 0) {
-                studentListContainer.innerHTML = '<p class="text-gray-500">Tidak ada siswa ditemukan di kelompok Anda.</p>';
+              studentListContainer.innerHTML = ""; // Kosongkan loading text
+              if (allStudents.length === 0) {
+                studentListContainer.innerHTML =
+                  '<p class="text-gray-500">Tidak ada siswa ditemukan di kelompok Anda.</p>';
                 return;
-            }
+              }
 
-            allStudents.forEach(student => {
-                const row = document.createElement('tr');
-                
+              allStudents.forEach((student) => {
+                const row = document.createElement("tr");
+
                 // Cari kurikulum yang sesuai untuk siswa ini
                 // Kita asumsikan program untuk GPQ adalah 'Bilqolam' dan semester 'Ganjil'
                 const programKey = `${student.grade}_Ganjil_Bilqolam`;
-                const programName = programAssignments[programKey] ? 'Bilqolam' : 'Tidak Ada Kurikulum';
-                
+                const programName = programAssignments[programKey]
+                  ? "Bilqolam"
+                  : "Tidak Ada Kurikulum";
+
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.nis}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.nama}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.grade}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${kelasMap[student.kelasId] || student.kelasId}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.shift}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.kelompok}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+                      student.nis
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
+                      student.nama
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      student.grade
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      kelasMap[student.kelasId] || student.kelasId
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      student.shift
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      student.kelompok
+                    }</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${programName}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button onclick="openInputNilaiModal(${JSON.stringify(student.nis)}, ${JSON.stringify(student.nama)}, ${JSON.stringify(programName)})" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        <button onclick="openInputNilaiModal(${JSON.stringify(
+                          student.nis
+                        )}, ${JSON.stringify(student.nama)}, ${JSON.stringify(
+                  programName
+                )})" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                             Input Nilai
                         </button>
                     </td>
                 `;
                 studentListContainer.appendChild(row);
-            });
-        } catch (error) {
-            console.error("Error getting students or assignments:", error);
-            studentListContainer.innerHTML = '<p class="text-red-500">Gagal memuat data siswa.</p>';
-        }
-    } else {
-      studentListContainer.innerHTML = '<p class="text-gray-500">Anda belum ditugaskan ke kelompok mana pun.</p>';
-    }
-
+              });
+            } catch (error) {
+              console.error("Error getting students or assignments:", error);
+              studentListContainer.innerHTML =
+                '<p class="text-red-500">Gagal memuat data siswa.</p>';
+            }
+          } else {
+            studentListContainer.innerHTML =
+              '<p class="text-gray-500">Anda belum ditugaskan ke kelompok mana pun.</p>';
+          }
 
           // TODO: Load data for GPQ
         } else if (userData.role === "guru_gpai") {
@@ -1468,17 +1495,24 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Fungsi untuk membuka modal input nilai (update)
-window.openInputNilaiModal = async (studentId, studentName, programName) => {
-    console.log('Membuka modal input nilai untuk:', studentId, studentName, programName);
-    
+  window.openInputNilaiModal = async (studentId, studentName, programName) => {
+    console.log(
+      "Membuka modal input nilai untuk:",
+      studentId,
+      studentName,
+      programName
+    );
+
     // Tampilkan nama siswa di modal
     inputNilaiSiswaName.textContent = `Nama: ${studentName} | Program: ${programName}`;
-    
+
     // TODO: Di masa depan, ambil data `materi` dari `programAssignments`
     // berdasarkan student.grade dan programName
     // Untuk sekarang, kita tampilkan form statis untuk 'Bilqolam'
-    
-    const nilaiInputContainer = document.getElementById('nilai-input-container');
+
+    const nilaiInputContainer = document.getElementById(
+      "nilai-input-container"
+    );
     nilaiInputContainer.innerHTML = `
         <div class="border p-4 rounded">
             <h4 class="font-bold mb-3">Input Nilai Bilqolam</h4>
@@ -1506,6 +1540,6 @@ window.openInputNilaiModal = async (studentId, studentName, programName) => {
     `;
 
     // Buka modal
-    inputNilaiModal.classList.remove('hidden');
-};
+    inputNilaiModal.classList.remove("hidden");
+  };
 }); // AKHIR DARI DOMContentLoaded
