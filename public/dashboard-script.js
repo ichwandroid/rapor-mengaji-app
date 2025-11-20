@@ -116,8 +116,144 @@ document.addEventListener("DOMContentLoaded", () => {
         if (userData.role === "admin") {
           adminContent.classList.remove("hidden");
           loadAndDisplayUsers();
+
+          // TODO: Load data for admin
         } else if (userData.role === "guru_gpq") {
+          console.log("Ini adalah Guru GPQ");
+          const guruGpqContent = document.getElementById("guru-gpq-content");
+          const studentTableBody = document.getElementById("student-table-gpq");
+          const assignments = userData.assignments; // Misal: [{shift: 1, kelompok: 5}, ...]
+          let allStudents = []; // Variabel untuk menyimpan semua siswa
+
           guruGpqContent.classList.remove("hidden");
+
+          // --- LOGIKA FILTER DAN TABEL ---
+
+          // Fungsi untuk mengisi dropdown filter
+          const populateGpqFilters = () => {
+            const shifts = [...new Set(allStudents.map((s) => s.shift))];
+            const groups = [...new Set(allStudents.map((s) => s.kelompok))];
+
+            populateDropdown(
+              document.getElementById("gpq-filter-shift"),
+              shifts
+            );
+            populateDropdown(
+              document.getElementById("gpq-filter-group"),
+              groups,
+              "Kelompok"
+            );
+          };
+
+          // Fungsi untuk merender tabel
+          const renderGpqStudentTable = (data) => {
+            studentTableBody.innerHTML = "";
+            if (data.length === 0) {
+              studentTableBody.innerHTML =
+                '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Tidak ada siswa yang cocok dengan filter.</td></tr>';
+              return;
+            }
+
+            data.forEach((student) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.nis}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.nama}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.kelasId}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${student.shift}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${student.kelompok}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="openInputNilaiModalGPQ('${student.id}', '${student.nama}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Input Nilai
+                    </button>
+                </td>
+            `;
+              studentTableBody.appendChild(row);
+            });
+          };
+
+          // Fungsi untuk menerapkan filter
+          const applyGpqFilters = () => {
+            const shiftFilter =
+              document.getElementById("gpq-filter-shift").value;
+            const groupFilter =
+              document.getElementById("gpq-filter-group").value;
+
+            const filteredData = allStudents.filter((student) => {
+              return (
+                (!shiftFilter || student.shift.toString() === shiftFilter) &&
+                (!groupFilter || student.kelompok.toString() === groupFilter)
+              );
+            });
+
+            renderGpqStudentTable(filteredData);
+          };
+
+          // Event Listeners untuk filter
+          document
+            .getElementById("gpq-filter-shift")
+            .addEventListener("change", applyGpqFilters);
+          document
+            .getElementById("gpq-filter-group")
+            .addEventListener("change", applyGpqFilters);
+
+          document
+            .getElementById("reset-gpq-filters")
+            .addEventListener("click", () => {
+              document.getElementById("gpq-filter-shift").value = "";
+              document.getElementById("gpq-filter-group").value = "";
+              renderGpqStudentTable(allStudents);
+            });
+
+          // --- LOGIKA PENGAMBILAN DATA ---
+
+          // Ambil semua siswa yang tugasnya cocok dengan guru ini
+          const loadAndDisplayGpqStudents = async () => {
+            studentTableBody.innerHTML =
+              '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data siswa...</td></tr>';
+            try {
+              if (!assignments || assignments.length === 0) {
+                studentTableBody.innerHTML =
+                  '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Anda belum ditugaskan ke kelompok mana pun.</td></tr>';
+                return;
+              }
+
+              // Buat array untuk query 'in'
+              const assignmentQueries = assignments.map((assignment) => {
+                return db
+                  .collection("students")
+                  .where("shift", "==", assignment.shift)
+                  .where("kelompok", "==", assignment.kelompok)
+                  .get();
+              });
+
+              // Jalankan semua query secara paralel
+              const querySnapshots = await Promise.all(assignmentQueries);
+
+              // Gabungkan hasil dari semua query
+              allStudents = [];
+              querySnapshots.forEach((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                  allStudents.push({ id: doc.id, ...doc.data() });
+                });
+              });
+
+              // Hapus duplikat (jika ada siswa kebetulan di tugas yang berbeda, meskipun tidak mungkin)
+              const uniqueStudents = Array.from(
+                new Map(allStudents.map((s) => [s.id, s])).values()
+              );
+
+              populateGpqFilters();
+              renderGpqStudentTable(uniqueStudents);
+            } catch (error) {
+              console.error("Error fetching GPQ students:", error);
+              studentTableBody.innerHTML =
+                '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Gagal memuat data siswa.</td></tr>';
+            }
+          };
+
+          // Panggil fungsi untuk memuat data
+          loadAndDisplayGpqStudents();
 
           // TODO: Load data for GPQ
         } else if (userData.role === "guru_gpai") {

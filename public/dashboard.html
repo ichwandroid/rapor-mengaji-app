@@ -310,6 +310,36 @@
                     </div>
                 </div>
 
+                <!-- TAMBAHKAN BAGIAN FILTER INI -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Filter Shift</label>
+                            <select id="gpq-filter-shift"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">Semua Shift</option>
+                                <option value="1">Shift 1</option>
+                                <option value="2">Shift 2</option>
+                                <option value="3">Shift 3</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Filter Kelompok</label>
+                            <select id="gpq-filter-group"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                                <option value="">Semua Kelompok</option>
+                                <!-- Opsi akan diisi otomatis -->
+                            </select>
+                        </div>
+                        <div>
+                            <button id="reset-gpq-filters"
+                                class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded w-full">
+                                Reset Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tabel Data Siswa -->
                 <div class="bg-white shadow rounded-lg p-6">
                     <div class="overflow-x-auto">
@@ -324,9 +354,6 @@
                                         Nama</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Grade</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Kelas</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -336,13 +363,10 @@
                                         Kelompok</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Program</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="student-list-gpq" class="bg-white divide-y divide-gray-200">
+                            <tbody id="student-table-gpq" class="bg-white divide-y divide-gray-200">
                                 <tr>
                                     <td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data siswa...
                                     </td>
